@@ -1,0 +1,30 @@
+{
+  "type": "record",
+  "name": "stockquote",
+  "fields": [
+    {
+      "name": "symbol",
+      "type": {
+        "type": "string",
+        "arg.properties": {
+          "options": [
+            "ACME",
+            "HOOLI"
+          ]
+        }
+      }
+    },
+    {
+      "name": "quote",
+      "type": {
+        "type": "double",
+        "arg.properties": {
+          "range": {
+            "min": 100,
+            "max": 200
+          }
+        }
+      }
+    }
+  ]
+}

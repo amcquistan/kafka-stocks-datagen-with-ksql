@@ -1,0 +1,33 @@
+
+CREATE STREAM stocks_stream_avro (
+  symbol VARCHAR,
+  quote DOUBLE
+) WITH (KAFKA_TOPIC='stocks', VALUE_FORMAT='avro');
+
+CREATE TABLE stocks_1min_windows_tbl 
+WITH (KAFKA_TOPIC='stocks_1min_windows_tbl') AS
+SELECT
+  symbol,
+  AVG(quote) avg_1min_quote,
+  CASE
+    WHEN AVG(quote) > 170 THEN 'SELL'
+    WHEN AVG(quote) < 130 THEN 'BUY'
+  END action
+FROM stocks_stream_avro
+WINDOW TUMBLING ( SIZE 1 MINUTE )
+GROUP BY symbol
+HAVING AVG(quote) > 170 OR AVG(quote) < 130
+EMIT CHANGES;
+
+CREATE STREAM stocks_buysell_interim_stream (
+  symbol VARCHAR KEY,
+  avg_1min_quote DOUBLE,
+  action VARCHAR
+) WITH (KAFKA_TOPIC='stocks_1min_windows_tbl', VALUE_FORMAT='avro');
+
+CREATE STREAM stocks_buysell_stream
+WITH (KAFKA_TOPIC='stocks_buysell_stream') AS
+SELECT * FROM stocks_buysell_interim_stream
+WHERE symbol IS NOT NULL
+PARTITION BY symbol
+EMIT CHANGES;
